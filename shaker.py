@@ -2,8 +2,8 @@
 # Bind shell by j0lt
 # This script is just for giving reference that how bind shell look like in python, you can modify as per your need.
 # Usage Format :
-#   For Running Server : twelvth.py server [port]
-#   For Running client : Usage Format : twelvth.py client [port] [ip of server]
+#   For Running Server : shaker.py server [port]
+#   For Running client : shaker.py client [port] [ip of server]
 
 import socket
 from sys import argv
@@ -127,6 +127,6 @@ if __name__ == "__main__":
             s.start()
 
     except:
-        print "The Parameter provided are wrong \n\n\tUsage Format : twelvth.py [client/server] [port] [ip{just for client}]"
+        print "The Parameter provided are wrong \n\n\tUsage Format : shaker.y [client/server] [port] [ip{just for client}]"
         _exit(1)
 

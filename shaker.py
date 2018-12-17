@@ -10,6 +10,7 @@ from sys import argv
 from os import _exit
 import json
 from zlib import compress,decompress
+from platform import system
 
 
 class server:
@@ -17,6 +18,10 @@ class server:
     def __init__(self,port):
         self.ip = socket.gethostbyname(socket.gethostname())
         self.port = port
+        self.l = "cd"
+        self.o = system()
+        if self.o == "Linux":
+            self.l = "pwd"
 
     def start(self):
         try:
@@ -28,12 +33,15 @@ class server:
             _exit(1)
         try:
             so.listen(1)
-            print "Waiting for connection ..."
+            host = socket.gethostbyname(socket.gethostname())
+            print "[%s:%s] Waiting for connection ..."%(host,self.port)
+
+
             while 1:
-                host = socket.gethostbyname(socket.gethostname())
+
                 ob , address = so.accept()
                 print "Connected with %s "%address[0]
-                ob.send(compress(json.dumps({"msg":"Connected With %s"%host , "location":self.__cmd('cd')[1]}).encode()))
+                ob.send(compress(json.dumps({"msg":"Connected With %s os at %s"%(self.o,host) , "location":self.__cmd(self.l)[1]}).encode()))
                 while 1:
                     try:
                         command = ob.recv(2048)
@@ -63,14 +71,12 @@ class server:
     def __cmd(self,command):
         from os import popen
         try:
+            q = popen(self.l).read()
             o = popen(command).read()
-            q = popen('cd').read()
+
             return (o,q)
         except:
             return "Sorry!! Command not executed"
-
-
-
 
 class client:
 
@@ -105,10 +111,6 @@ class client:
                         so.close()
                         _exit(1)
 
-
-
-
-
 if __name__ == "__main__":
 
     try:
@@ -127,6 +129,6 @@ if __name__ == "__main__":
             s.start()
 
     except:
-        print "The Parameter provided are wrong \n\n\tUsage Format : shaker.y [client/server] [port] [ip{just for client}]"
+        print "The Parameter provided are wrong \n\n\tUsage Format : shaker.py [client/server] [port] [ip{just for client}]"
         _exit(1)
 

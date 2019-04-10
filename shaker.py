@@ -33,7 +33,7 @@ class server:
             _exit(1)
         try:
             so.listen(1)
-            host = socket.gethostbyname(socket.gethostname())
+            host = socket.gethostbyname(0.0.0.0)
             print "[%s:%s] Waiting for connection ..."%(host,self.port)
 
 

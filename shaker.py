@@ -16,7 +16,7 @@ from platform import system
 class server:
 
     def __init__(self,port):
-        self.ip = socket.gethostbyname(socket.gethostname())
+        self.ip = socket.gethostbyname('0.0.0.0')
         self.port = port
         self.l = "cd"
         self.o = system()
@@ -33,7 +33,7 @@ class server:
             _exit(1)
         try:
             so.listen(1)
-            host = socket.gethostbyname(0.0.0.0)
+            host = socket.gethostbyname(socket.gethostname())
             print "[%s:%s] Waiting for connection ..."%(host,self.port)
 
 

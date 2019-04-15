@@ -16,7 +16,7 @@ from platform import system
 class server:
 
     def __init__(self,port):
-        self.ip = socket.gethostbyname('0.0.0.0')
+        self.ip = '0.0.0.0'
         self.port = port
         self.l = "cd"
         self.o = system()

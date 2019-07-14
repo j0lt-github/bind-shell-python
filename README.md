@@ -12,7 +12,7 @@ This will open specified port and listen for incoming shell commands from a user
 Client mode od script should be used to communicate with victim machine running this script in server mode , inshort, we can run this script in client mode to communicate with device running this bind shell in server mode.<br />
 Two things we should know before running this script in client mode are :<br />
 1. IP of victim machine.
-2. Port on which this bind shell is running.<br />
+2. Port on which this bind shell is running.
 Run bellow terminal command to start client mode :<br />
   `python shaker.py client [port on which bind shell is running] [IP of victim machine]`<br />
 This will connect with the victim machine

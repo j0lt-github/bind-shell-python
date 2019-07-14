@@ -4,7 +4,7 @@ This is a basic bind shell script in python 2 , containing both server and clien
 ## Server Mode
 
 Server mode of script should be started at victim machine by executing bellow commands in terminal of victim machine:
-  python shaker.py server [port to bind]
+'python shaker.py server [port to bind]'
 This will open specified port and listen for incoming shell commands from a user running this script in Client mode.
 
 ## Client Mode

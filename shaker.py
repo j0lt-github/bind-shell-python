@@ -20,7 +20,7 @@ class server:
         self.port = port
         self.l = "cd"
         self.o = system()
-        if self.o == "Linux":
+        if self.o == "Linux" or self.o == "SunOS":
             self.l = "pwd"
 
     def start(self):

